@@ -1,5 +1,6 @@
 using System;
 using JetBrains.Annotations;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -12,7 +13,7 @@ public class WaitUntilTimeout : CustomYieldInstruction
   private readonly TickManager tickManager;
   private readonly int endTick;
 
-  public WaitUntilTimeout(Func<bool> predicate, int maxTicksToWait)
+  public WaitUntilTimeout(Func<bool> predicate, int maxTicksToWait = GenDate.TicksPerDay)
   {
     this.predicate = predicate;
     tickManager = Find.TickManager;
