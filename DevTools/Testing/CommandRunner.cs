@@ -9,7 +9,8 @@ internal static class CommandRunner
   public static Result ExecuteCommandLineArgs(ModContentPack mod)
   {
     const string PackageIdArg = "--pid";
-    
+
+    const string Quickstart = "--quickstart";
     const string RunTestsArg = "--test";
     const string FilterArg = "--filter";
     const string WhereArg = "--where";
@@ -56,6 +57,11 @@ internal static class CommandRunner
             result.testPlan = args[++i];
           }
           break;
+        case Quickstart:
+            testToRun = TestCommand.Quickstart;
+            if (i + 1 < args.Length)
+                result.quickstart = args[++i];
+            break;
         case FilterArg or WhereArg or FilterShort:
           if (i + 1 < args.Length)
             result.filterStr = args[++i];
@@ -105,6 +111,12 @@ internal static class CommandRunner
           testRunner.Run();
         }
         break;
+      case TestCommand.Quickstart:
+      {
+          var quickstarter = new Quickstarter(result.quickstart);
+          quickstarter.Run();
+      }
+          break;
     }
     return result;
   }
@@ -114,7 +126,8 @@ internal static class CommandRunner
     None,
     Plan,
     Unit,
-    Smoke
+    Smoke,
+    Quickstart
   }
 
   public record Result
@@ -124,6 +137,8 @@ internal static class CommandRunner
     // Testing
     public string filterStr;
     public string testPlan;
+
+    public string quickstart;
 
     public bool headless;
     public bool exitOnFinish;
