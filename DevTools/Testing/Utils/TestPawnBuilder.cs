@@ -18,7 +18,7 @@ public class TestPawnBuilder
     private PawnGenerationRequest? _request;
     private List<Func<Pawn, bool>> _pawnValidators = [];
     private List<Action<Pawn>> _pawnModifiers = [];
-    private List<Action<Pawn>> _postSpawnModifiers = [];
+    private List<Action<Pawn, int>> _postSpawnModifiers = [];
     private List<Action<Pawn>> _preCleanup = [];
     private Faction _faction = Faction.OfPlayer;
     private IntVec3? _location;
@@ -64,7 +64,7 @@ public class TestPawnBuilder
     public TestPawnBuilder WithWorkMaxed(WorkTypeDef workType)
     {
         _pawnValidators.Add(pawn => !pawn.WorkTypeIsDisabled(workType));
-        _postSpawnModifiers.Add(pawn =>
+        _postSpawnModifiers.Add((pawn, _) =>
         {
             foreach (var skill in workType.relevantSkills)
                 pawn.skills.Learn(skill, 100000000);
@@ -142,7 +142,7 @@ public class TestPawnBuilder
         return this;
     }
 
-    public TestPawnBuilder WithPostSpawn(Action<Pawn> postSpawn)
+    public TestPawnBuilder WithPostSpawn(Action<Pawn, int> postSpawn)
     {
         _postSpawnModifiers.Add(postSpawn);
         return this;
@@ -202,7 +202,7 @@ public class TestPawnBuilder
         GenSpawn.Spawn(pawn, location, map);
 
         foreach (var postSpawnModifier in _postSpawnModifiers)
-            postSpawnModifier(pawn);
+            postSpawnModifier(pawn, _generatedPawns.Count);
 
         _generatedPawns.Add(pawn);
         return pawn;
