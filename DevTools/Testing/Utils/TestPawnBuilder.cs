@@ -61,19 +61,21 @@ public class TestPawnBuilder
         return this;
     }
 
-    public TestPawnBuilder WithWorkMaxed(WorkTypeDef workType)
+    public TestPawnBuilder WithWorkMaxed(params WorkTypeDef[] workTypes)
     {
-        _pawnValidators.Add(pawn => !pawn.WorkTypeIsDisabled(workType));
-        _postSpawnModifiers.Add((pawn, _) =>
+        foreach (WorkTypeDef workType in workTypes)
         {
-            foreach (var skill in workType.relevantSkills)
-                pawn.skills.Learn(skill, 100000000);
+            _pawnValidators.Add(pawn => !pawn.WorkTypeIsDisabled(workType));
+            _postSpawnModifiers.Add((pawn, _) =>
+            {
+                foreach (var skill in workType.relevantSkills)
+                    pawn.skills.Learn(skill, 100000000);
 
-            pawn.workSettings.EnableAndInitialize();
-            pawn.workSettings.SetPriority(workType, 1);
-        });
-        _nameGen[(int)TestPawnName.WorkType] ??= workType.LabelCap;
-
+                pawn.workSettings.EnableAndInitialize();
+                pawn.workSettings.SetPriority(workType, 1);
+            });
+            _nameGen[(int)TestPawnName.WorkType] ??= workType.LabelCap;
+        }
         return this;
     }
 
@@ -224,7 +226,7 @@ public class TestPawnBuilder
     private Pawn GenPawn()
     {
         if (_pawnKind != null)
-            return PawnGenerator.GeneratePawn(_pawnKind, _faction ?? Faction.OfPlayer);
+            return PawnGenerator.GeneratePawn(_pawnKind, _faction ?? (_pawnKind.RaceProps.Humanlike ? Faction.OfPlayer : null));
         if (_request != null)
             return PawnGenerator.GeneratePawn(_request.Value);
 
