@@ -13,7 +13,7 @@ public static class Tweaker
         get => UltraSpeedBoost.GetValue(null) is true;
         set
         {
-            UltraSpeedBoost.SetValue(null, value); 
+            UltraSpeedBoost.SetValue(null, value);
             CurTimeSpeed.SetValue(Find.TickManager, value ? TimeSpeed.Ultrafast : TimeSpeed.Fast);
             DebugViewSettings.neverForceNormalSpeed = value;
         }

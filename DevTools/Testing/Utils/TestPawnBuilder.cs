@@ -132,6 +132,31 @@ public class TestPawnBuilder
         return this;
     }
 
+    public TestPawnBuilder WithMech(params PawnKindDef[] mechs)
+    {
+        _postSpawnModifiers.Add((pawn, _) =>
+        {
+            if (!pawn.health.hediffSet.HasHediff(HediffDefOf.MechlinkImplant))
+                pawn.health.AddHediff(HediffDefOf.MechlinkImplant);
+
+            foreach (var mechKind in mechs)
+            {
+                var mech = PawnGenerator.GeneratePawn(mechKind, Faction.OfPlayer);
+
+                if (!MechanitorUtility.EverControllable(mech))
+                {
+                    Log.Warning("Tried to spawn a non-controllable Mech");
+                    continue;
+                }
+
+                GenSpawn.Spawn(mech, pawn.Position, pawn.Map);
+                pawn.relations.AddDirectRelation(PawnRelationDefOf.Overseer, mech);
+            }
+        });
+
+        return this;
+    }
+
     public TestPawnBuilder WithValidator(Func<Pawn, bool> validator)
     {
         _pawnValidators.Add(validator);
@@ -232,5 +257,4 @@ public class TestPawnBuilder
 
         throw new InvalidOperationException();
     }
-
 }
