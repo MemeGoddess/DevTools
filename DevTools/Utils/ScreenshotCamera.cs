@@ -8,6 +8,7 @@ using HarmonyLib;
 using JetBrains.Annotations;
 using UnityEngine;
 using Verse;
+using Object = UnityEngine.Object;
 
 namespace DevTools;
 
@@ -148,44 +149,51 @@ public class ScreenshotCamera : GameComponent
             var newPath = Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path) + "-fail" + Path.GetExtension(path));
             File.WriteAllBytes(newPath, currentTex.EncodeToPNG());
         }
+        Object.Destroy(originalTex);
+        Object.Destroy(currentTex);
     }
 
     public static void ValidateTextures(Texture2D original, Texture2D current)
     {
         Expect.AreEqual(original.texelSize, current.texelSize, "Sizes are different");
+
         float difference = 0;
         float usedPixels = 0;
-        int smallestX = int.MaxValue, smallestY = int.MaxValue, largestX = -1, largestY = -1;
-        var combined = new Texture2D(original.width, original.height, TextureFormat.RGBA32, mipChain: false);
-        for(int x =  0; x < original.width; x++)
-            for (int y = 0; y < original.height; y++)
+
+        int smallestX = original.width, smallestY = original.height, largestX = -1, largestY = -1;
+
+        var originalPixels = original.GetPixels();
+        var currentPixels = current.GetPixels();
+        var comparisonPixels = new Color[originalPixels.Length];
+
+        var width = original.width;
+        for(int i = 0; i < originalPixels.Length; i++)
+        {
+            var originalPixel = originalPixels[i];
+            var currentPixel =  currentPixels[i];
+
+            if (originalPixel.maxColorComponent > 0 || currentPixel.maxColorComponent > 0)
             {
-                var originalPixel =  original.GetPixel(x, y);
-                var currentPixel =  current.GetPixel(x, y);
-                if (originalPixel.maxColorComponent > 0 || currentPixel.maxColorComponent > 0)
-                {
-                    usedPixels++;
-                    smallestX = Math.Min(smallestX, x);
-                    smallestY = Math.Min(smallestY, y);
-                    largestX = Math.Max(largestX, x);
-                    largestY = Math.Max(largestY, y);
-                }
-
-                if (originalPixel != currentPixel)
-                    difference++;
-
-                if (originalPixel.maxColorComponent > 0 && currentPixel.maxColorComponent == 0)
-                    combined.SetPixel(x, y, Color.Lerp(originalPixel, Color.red, 0.2f));
-                else if (currentPixel.maxColorComponent > 0 && originalPixel.maxColorComponent == 0)
-                    combined.SetPixel(x, y, Color.Lerp(currentPixel, Color.green, 0.2f));
-                else if(originalPixel != currentPixel)
-                    combined.SetPixel(x, y, Color.Lerp(currentPixel, Color.yellow, 0.2f));
-                else
-                    combined.SetPixel(x, y, originalPixel);
+                usedPixels++;
+                int x = i % width;
+                int y = i / width;
+                smallestX = Math.Min(smallestX, x );
+                smallestY = Math.Min(smallestY, y);
+                largestX = Math.Max(largestX, x);
+                largestY = Math.Max(largestY, y);
             }
+
+            if (originalPixel != currentPixel)
+                difference++;
+
+            comparisonPixels[i] = ComparePixel(originalPixel, currentPixel);
+        }
         Expect.AreEqual(difference, 0, $"Image is {Math.Round(difference / usedPixels * 100, 2)}% different ({difference}/{usedPixels})");
 
-        combined.Apply();
+        var comparison = new Texture2D(original.width, original.height, TextureFormat.RGBA32, mipChain: false);
+        comparison.SetPixels(comparisonPixels);
+        comparison.Apply();
+
         var rect =  new Rect(
             Math.Max(smallestX - 20, 0),
             Math.Max(smallestY - 20, 0),
@@ -193,8 +201,9 @@ public class ScreenshotCamera : GameComponent
             Math.Min(largestY + 40 - smallestY, current.height - smallestY));
 
         var artefact = new Texture2D((int)rect.width, (int)rect.height, TextureFormat.RGBA32, mipChain: false);
-        artefact.SetPixels(combined.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height));
+        artefact.SetPixels(comparison.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height));
         artefact.Apply();
+        Object.Destroy(comparison);
         Test.Artefact(artefact);
     }
 
@@ -207,6 +216,24 @@ public class ScreenshotCamera : GameComponent
     internal static void CapturePostfix()
     {
         RenderTexture.active = instance._active;
+    }
+
+    private static Color ComparePixel(Color c1, Color c2)
+    {
+        // Missing in Current
+        if (c1.maxColorComponent > 0 && c2.maxColorComponent == 0)
+            return Color.Lerp(c1, Color.red, 0.2f);
+
+        // Added in Current
+        if (c2.maxColorComponent > 0 && c1.maxColorComponent == 0)
+            return Color.Lerp(c2, Color.green, 0.2f);
+
+        // Different in both
+        if (c1 != c2)
+            return Color.Lerp(c2, Color.yellow, 0.2f);
+
+        // Equal
+        return c1;
     }
 
 }
