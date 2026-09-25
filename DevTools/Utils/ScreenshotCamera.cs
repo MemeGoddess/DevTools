@@ -2,7 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using DevTools.Testing;
 using HarmonyLib;
+using JetBrains.Annotations;
 using UnityEngine;
 using Verse;
 
@@ -16,6 +19,7 @@ public class ScreenshotCamera : GameComponent
 
     private IReadOnlyList<Thing> _culledList = [];
     private CellRect? _culledCells = [];
+    private RenderTexture _active;
 
     private static bool plzTakeScreenshot = false;
     private static ScreenshotCamera instance;
@@ -107,5 +111,38 @@ public class ScreenshotCamera : GameComponent
         var otherTexture = instance._baked;
         var otherPng = otherTexture.EncodeToPNG();
         File.WriteAllBytes("/home/lana/RimWorldDev/Dumps/test2.png", otherPng);
+    }
+
+    public static IEnumerator TakeUIScreenshot(Window window, [CanBeNull] MethodInfo methodToCapture = null)
+    {
+        instance._texture =
+            new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
+        instance._texture.Create();
+        using var capture = new ScopedMethodHook(methodToCapture ?? AccessTools.Method(window.GetType(), nameof(Window.DoWindowContents)),
+            prefix: new HarmonyMethod(CapturePrefix), postfix: new HarmonyMethod(CapturePostfix));
+
+        yield return new WaitForEndOfFrame();
+
+        var rect = window.windowRect;
+        var baked = instance._texture.CreateTexture2D(TextureFormat.RGBA32, mipChain: false);
+
+        var cropped = new Texture2D((int)window.windowRect.width, (int)window.windowRect.height, TextureFormat.RGBA32, mipChain: false);
+        cropped.SetPixels(baked.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height));
+        cropped.Apply();
+
+        var otherPng = cropped.EncodeToPNG();
+        File.WriteAllBytes("/home/lana/RimWorldDev/Dumps/testUI.png", otherPng);
+
+    }
+
+    internal static void CapturePrefix()
+    {
+        instance._active = RenderTexture.active;
+        RenderTexture.active = instance._texture;
+    }
+
+    internal static void CapturePostfix()
+    {
+        RenderTexture.active = instance._active;
     }
 }
