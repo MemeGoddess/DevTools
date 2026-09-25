@@ -54,6 +54,5 @@ public class Quickstarter
         }
 
         yield return new WaitUntil(() => Current.ProgramState != ProgramState.Playing);
-        Debugger.Break();
     }
 }
