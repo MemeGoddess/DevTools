@@ -95,6 +95,9 @@ public static class Test
     Find.WindowStack.TryRemove(dlg);
   }
 
+  public static void Artefact(Texture2D artefact) =>
+      Current.Artefacts.Add(artefact);
+
   internal static void Discover(ITestManager manager)
   {
     // Do a dry run through all cached test cases, test data is cached lazily so entering scopes
@@ -467,6 +470,8 @@ public static class Test
         Parent?.Exception = field;
       }
     }
+
+    public List<Texture2D> Artefacts { get; } = new();
 
     public StackTrace StackTrace
     {

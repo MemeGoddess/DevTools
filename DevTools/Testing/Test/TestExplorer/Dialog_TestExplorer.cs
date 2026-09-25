@@ -197,6 +197,18 @@ internal sealed class Dialog_TestExplorer : Window
       };
       inRect.yMax -= 24;
       using TextBlock textBlock = new(TextAnchor.UpperLeft);
+      ITestGroup singleSelected = table.Selector.selected.First();
+      if (singleSelected.Artefacts.Any())
+      {
+          var artefact = singleSelected.Artefacts.First();
+          if (artefact != null)
+          {
+            inRect.SplitHorizontallyWithMargin(out var artefactRect, out inRect, out _, 4f, topHeight: artefact.height);
+            Widgets.DrawHighlight(artefactRect);
+            Widgets.DrawTextureFitted(artefactRect, artefact, 1f);
+          }
+
+      }
       Widgets.TextArea(inRect, Summary, readOnly: true);
       if (Widgets.ButtonText(bottomRect, "Open Log"))
       {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using DevTools.Benchmarking;
 using JetBrains.Annotations;
+using UnityEngine;
 
 namespace DevTools.Testing;
 
@@ -33,7 +34,7 @@ public interface ITestGroup : IDataRow<ExplorerColumn>
   /// Total test count contained
   /// </summary>
   int TestCount { get; }
-    
+
   /// <summary>
   /// Name of the Expect or Assert condition being evaluated
   /// </summary>
@@ -48,6 +49,11 @@ public interface ITestGroup : IDataRow<ExplorerColumn>
   /// Reason for test failure
   /// </summary>
   string FailMessage { get; set; }
+
+  /// <summary>
+  /// Texture result of Test
+  /// </summary>
+  List<Texture2D> Artefacts { get; }
 
   /// <summary>
   /// Stacktrace for failed test case

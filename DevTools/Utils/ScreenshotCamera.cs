@@ -155,17 +155,47 @@ public class ScreenshotCamera : GameComponent
         Expect.AreEqual(original.texelSize, current.texelSize, "Sizes are different");
         float difference = 0;
         float usedPixels = 0;
+        int smallestX = int.MaxValue, smallestY = int.MaxValue, largestX = -1, largestY = -1;
+        var combined = new Texture2D(original.width, original.height, TextureFormat.RGBA32, mipChain: false);
         for(int x =  0; x < original.width; x++)
             for (int y = 0; y < original.height; y++)
             {
                 var originalPixel =  original.GetPixel(x, y);
                 var currentPixel =  current.GetPixel(x, y);
                 if (originalPixel.maxColorComponent > 0 || currentPixel.maxColorComponent > 0)
+                {
                     usedPixels++;
+                    smallestX = Math.Min(smallestX, x);
+                    smallestY = Math.Min(smallestY, y);
+                    largestX = Math.Max(largestX, x);
+                    largestY = Math.Max(largestY, y);
+                }
+
                 if (originalPixel != currentPixel)
                     difference++;
+
+                if (originalPixel.maxColorComponent > 0 && currentPixel.maxColorComponent == 0)
+                    combined.SetPixel(x, y, Color.Lerp(originalPixel, Color.red, 0.2f));
+                else if (currentPixel.maxColorComponent > 0 && originalPixel.maxColorComponent == 0)
+                    combined.SetPixel(x, y, Color.Lerp(currentPixel, Color.green, 0.2f));
+                else if(originalPixel != currentPixel)
+                    combined.SetPixel(x, y, Color.Lerp(currentPixel, Color.yellow, 0.2f));
+                else
+                    combined.SetPixel(x, y, originalPixel);
             }
         Expect.AreEqual(difference, 0, $"Image is {Math.Round(difference / usedPixels * 100, 2)}% different ({difference}/{usedPixels})");
+
+        combined.Apply();
+        var rect =  new Rect(
+            Math.Max(smallestX - 20, 0),
+            Math.Max(smallestY - 20, 0),
+            Math.Min(largestX + 40 - smallestX, current.width - smallestX),
+            Math.Min(largestY + 40 - smallestY, current.height - smallestY));
+
+        var artefact = new Texture2D((int)rect.width, (int)rect.height, TextureFormat.RGBA32, mipChain: false);
+        artefact.SetPixels(combined.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height));
+        artefact.Apply();
+        Test.Artefact(artefact);
     }
 
     internal static void CapturePrefix()
