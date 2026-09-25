@@ -82,8 +82,9 @@ public class ScreenshotCamera : GameComponent
     }
 
 
-    public static IEnumerator TakeScreenshot(string path, IReadOnlyList<Thing> things = null, CellRect? cells = null)
+    public static IEnumerator TakeScreenshot(string path, IReadOnlyList<Thing> things = null, CellRect? cells = null, Action<Texture2D, Texture2D> validator = null)
     {
+        validator ??= ValidateTextures;
         plzTakeScreenshot = true;
         instance._culledList = things;
         instance._culledCells = cells;
@@ -109,8 +110,9 @@ public class ScreenshotCamera : GameComponent
         File.WriteAllBytes(path, png);
     }
 
-    public static IEnumerator TakeUIScreenshot(string path, Window window, [CanBeNull] MethodInfo methodToCapture = null)
+    public static IEnumerator TakeUIScreenshot(string path, Window window, [CanBeNull] MethodInfo methodToCapture = null, Action<Texture2D, Texture2D> validator = null)
     {
+        validator ??= ValidateTextures;
         instance._texture =
             new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
         instance._texture.Create();
@@ -122,13 +124,48 @@ public class ScreenshotCamera : GameComponent
         var rect = window.windowRect;
         var baked = instance._texture.CreateTexture2D(TextureFormat.RGBA32, mipChain: false);
 
-        var cropped = new Texture2D((int)window.windowRect.width, (int)window.windowRect.height, TextureFormat.RGBA32, mipChain: false);
-        cropped.SetPixels(baked.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height));
-        cropped.Apply();
+        var currentTex = new Texture2D((int)window.windowRect.width, (int)window.windowRect.height, TextureFormat.RGBA32, mipChain: false);
+        currentTex.SetPixels(baked.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height));
+        currentTex.Apply();
 
-        var otherPng = cropped.EncodeToPNG();
-        File.WriteAllBytes(path, otherPng);
+        if (!File.Exists(path))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllBytes(path, currentTex.EncodeToPNG());
+            if(TestRunner.Active)
+                Test.Fail("Comparison image didn't exist");
+            yield break;
+        }
 
+        var originalBytes = File.ReadAllBytes(path);
+        var originalTex = new Texture2D(1, 1);
+        originalTex.LoadImage(originalBytes);
+
+        validator(originalTex, currentTex);
+        ITestGroup current = Test.Current;
+        if (current.Status == Status.Failed)
+        {
+            var newPath = Path.Combine(Path.GetDirectoryName(path)!, Path.GetFileNameWithoutExtension(path) + "-fail" + Path.GetExtension(path));
+            File.WriteAllBytes(newPath, currentTex.EncodeToPNG());
+        }
+    }
+
+    public static void ValidateTextures(Texture2D original, Texture2D current)
+    {
+        Expect.AreEqual(original.texelSize, current.texelSize, "Sizes are different");
+        float difference = 0;
+        float usedPixels = 0;
+        for(int x =  0; x < original.width; x++)
+            for (int y = 0; y < original.height; y++)
+            {
+                var originalPixel =  original.GetPixel(x, y);
+                var currentPixel =  current.GetPixel(x, y);
+                if (originalPixel.maxColorComponent > 0 || currentPixel.maxColorComponent > 0)
+                    usedPixels++;
+                if (originalPixel != currentPixel)
+                    difference++;
+            }
+        Expect.AreEqual(difference, 0, $"Image is {Math.Round(difference / usedPixels * 100, 2)}% different ({difference}/{usedPixels})");
     }
 
     internal static void CapturePrefix()
@@ -141,4 +178,5 @@ public class ScreenshotCamera : GameComponent
     {
         RenderTexture.active = instance._active;
     }
+
 }
