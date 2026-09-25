@@ -82,7 +82,7 @@ public class ScreenshotCamera : GameComponent
     }
 
 
-    public static IEnumerator TakeScreenshot(IReadOnlyList<Thing> things = null, CellRect? cells = null)
+    public static IEnumerator TakeScreenshot(string path, IReadOnlyList<Thing> things = null, CellRect? cells = null)
     {
         plzTakeScreenshot = true;
         instance._culledList = things;
@@ -106,14 +106,10 @@ public class ScreenshotCamera : GameComponent
         texture.Apply();
 
         var png = texture.EncodeToPNG();
-        File.WriteAllBytes("/home/lana/RimWorldDev/Dumps/test.png", png);
-
-        var otherTexture = instance._baked;
-        var otherPng = otherTexture.EncodeToPNG();
-        File.WriteAllBytes("/home/lana/RimWorldDev/Dumps/test2.png", otherPng);
+        File.WriteAllBytes(path, png);
     }
 
-    public static IEnumerator TakeUIScreenshot(Window window, [CanBeNull] MethodInfo methodToCapture = null)
+    public static IEnumerator TakeUIScreenshot(string path, Window window, [CanBeNull] MethodInfo methodToCapture = null)
     {
         instance._texture =
             new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
@@ -131,7 +127,7 @@ public class ScreenshotCamera : GameComponent
         cropped.Apply();
 
         var otherPng = cropped.EncodeToPNG();
-        File.WriteAllBytes("/home/lana/RimWorldDev/Dumps/testUI.png", otherPng);
+        File.WriteAllBytes(path, otherPng);
 
     }
 
