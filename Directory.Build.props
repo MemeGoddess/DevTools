@@ -22,7 +22,7 @@
     <DebugSymbols>true</DebugSymbols>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <UseKrafsPackageRef>false</UseKrafsPackageRef>
+    <UseKrafsPackageRef>true</UseKrafsPackageRef>
 
     <ModDir>$(MSBuildThisFileDirectory)\..\</ModDir>
     <RefDir>$(ModDir)..\..\</RefDir>
