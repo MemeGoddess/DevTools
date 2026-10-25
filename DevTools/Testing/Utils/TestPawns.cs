@@ -25,6 +25,30 @@ public static class TestPawns
         ThingDef.Named("Apparel_ArmorRecon"),
         ThingDef.Named("Gun_AssaultRifle"));
 
+  public static TestPawnBuilder Overseer =>
+      Blank
+          .WithName("Overseer")
+          .WithWorkMaxed(WorkTypeDefOf.Smithing)
+          .WithModifer(x =>
+          {
+              x.health.AddHediff(HediffDefOf.MechlinkImplant);
+              x.story.traits.GainTrait(new Trait(new TraitDef()
+              {
+                  defName = "Overseer Supreme",
+                  generated = true,
+                  degreeDatas =
+                  [
+                      new TraitDegreeData()
+                      {
+                          statOffsets = new List<StatModifier>()
+                          {
+                              new StatModifier() { stat = StatDefOf.MechBandwidth, value = 1000 }
+                          }
+                      }
+                  ]
+              }));
+          });
+
   public static TestPawnBuilder Blank =>
     PawnKindDefOf
       .Colonist
@@ -41,9 +65,11 @@ public static class TestPawns
           {
             NeedDefOf.Food,
             NeedDefOf.Rest,
-          }
+          },
         }],
       })));
+
+
 
 
   private static TestPawnBuilder WithAllWorkAvailable(this TestPawnBuilder builder) =>
