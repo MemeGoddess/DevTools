@@ -111,6 +111,8 @@ public class TestPawnBuilder
                 }
                 else if (def.IsApparel)
                     pawn.apparel.Wear(thing as Apparel);
+                else if (def.EverHaulable)
+                    pawn.inventory.TryAddAndUnforbid(thing);
                 else
                     throw new NotImplementedException(
                         $"Equipping {def.defName} is not implemented");
