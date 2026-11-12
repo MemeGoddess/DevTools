@@ -71,7 +71,7 @@ public class TestPawnBuilder
                 foreach (var skill in workType.relevantSkills)
                     pawn.skills.Learn(skill, 100000000);
 
-                pawn.workSettings.EnableAndInitialize();
+                pawn.workSettings.EnableAndInitializeIfNotAlreadyInitialized();
                 pawn.workSettings.SetPriority(workType, 1);
             });
             _nameGen[(int)TestPawnName.WorkType] ??= workType.LabelCap;
@@ -191,6 +191,26 @@ public class TestPawnBuilder
                 _faction.ChangeGoodwill_Debug(Faction.OfPlayer, -100);
         });
 
+        return this;
+    }
+
+    public TestPawnBuilder WithStatMultiplier(float multiplier, params StatDef [] defs)
+    {
+        _pawnModifiers.Add(pawn =>
+        {
+            var hediff = new HediffDef
+            {
+                stages = [
+                new HediffStage()
+                {
+                    becomeVisible = false,
+                    statFactors = [.. defs.Select(def => new StatModifier() { stat = def, value = multiplier })]
+                }
+                ],
+                generated = true,
+            };
+            pawn.health.AddHediff(hediff);
+        });
         return this;
     }
 
